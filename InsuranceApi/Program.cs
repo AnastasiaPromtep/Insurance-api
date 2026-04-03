@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<InsuranceDbContext>(options =>
 {
-    if (builder.Environment.IsDevelopment())
+    if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
     {
         options.UseSqlite(connectionString);
     }
@@ -24,14 +24,15 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();    
+    app.UseSwaggerUI();
 }
 
 app.MapGet("/", () => "Hello World!");
 
 var policiesGroup = app.MapGroup("/policies");
 
-policiesGroup.MapGet("/", async (InsuranceDbContext dbContext) => {
+policiesGroup.MapGet("/", async (InsuranceDbContext dbContext) =>
+{
     var policies = await dbContext.Policies.ToListAsync();
     return Results.Ok(policies);
 });
@@ -110,12 +111,13 @@ policiesGroup.MapDelete("/{id:int}", (int id, InsuranceDbContext db) =>
     return Results.NoContent();
 });
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<InsuranceDbContext>();
     db.Database.Migrate();
 }
 
 app.Run();
 
-app.Run();
+public partial class Program { }
