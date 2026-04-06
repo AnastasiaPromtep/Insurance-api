@@ -50,4 +50,36 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var content = await secondResponse.Content.ReadAsStringAsync();
         content.Should().Contain("policy_number_already_exists");
     }
+
+    [Fact]
+    public async Task PostPolicies_ShouldReturnBadRequest_WhenPremiumAmountIsInvalid()
+    {
+        var request = new
+        {
+            policyNumber = "POL-002",
+            subscriberName = "Alice Dupont",
+            premiumAmount = 0m,
+            startDate = "2026-04-01T00:00:00Z"
+        };
+
+        var response = await _client.PostAsJsonAsync("/policies", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostPolicies_ShouldReturnBadRequest_WhenPolicyNumberIsEmpty()
+    {
+        var request = new
+        {
+            policyNumber = "",
+            subscriberName = "Alice Dupont",
+            premiumAmount = 1200m,
+            startDate = "2026-04-01T00:00:00Z"
+        };
+
+        var response = await _client.PostAsJsonAsync("/policies", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
