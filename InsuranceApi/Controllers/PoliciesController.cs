@@ -2,6 +2,7 @@ using InsuranceApi.Models;
 using InsuranceApi.Services.Policies;
 using InsuranceApi.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace InsuranceApi.Controllers;
 
@@ -63,6 +64,14 @@ public class PoliciesController : ControllerBase
             {
                 code = "policy_number_already_exists",
                 message = ex.Message
+            });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new
+            {
+                code = "policy_number_already_exists",
+                message = $"A policy with number '{request.PolicyNumber}' already exists."
             });
         }
     }
