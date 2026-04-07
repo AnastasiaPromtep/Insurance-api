@@ -85,4 +85,21 @@ public sealed class PolicyService
 
         return policy;
     }
+
+    public async Task DeleteAsync(string policyNumber, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(policyNumber))
+        {
+            throw new ArgumentException("Policy number is required.", nameof(policyNumber));
+        }
+
+        var policy = await _repository.GetByPolicyNumberAsync(policyNumber, cancellationToken);
+        if (policy == null)
+        {
+            throw new KeyNotFoundException($"Policy with number {policyNumber} not found.");
+        }
+
+        await _repository.DeleteAsync(policy, cancellationToken);
+        await _repository.SaveChangesAsync(cancellationToken);
+    }
 }

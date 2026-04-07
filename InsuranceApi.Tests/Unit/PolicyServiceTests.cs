@@ -130,6 +130,51 @@ public class PolicyCreationServiceTests
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
+    [Fact]
+    public async Task DeleteAsync_ShouldDeletePolicy_WhenPolicyExists()
+    {
+        var repository = new FakePolicyRepository();
+        repository.Items.Add(new Policy
+        {
+            Id = 1,
+            PolicyNumber = "POL-001",
+            SubscriberName = "Alice Dupont",
+            PremiumAmount = 1200m,
+            StartDate = new DateTime(2026, 04, 01),
+            Status = PolicyStatus.Draft
+        });
+
+        var service = new PolicyService(repository);
+
+        await service.DeleteAsync("POL-001");
+
+        repository.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldThrowArgumentException_WhenPolicyNumberIsInvalid()
+    {
+        var repository = new FakePolicyRepository();
+        var service = new PolicyService(repository);
+
+        var act = async () => await service.DeleteAsync("");
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Policy number is required*");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldThrowNotFoundException_WhenPolicyDoesNotExist()
+    {
+        var repository = new FakePolicyRepository();
+        var service = new PolicyService(repository);
+
+        var act = async () => await service.DeleteAsync("NON-EXISTENT");
+
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage("*NON-EXISTENT*");
+    }
+
     private sealed class FakePolicyRepository : IPolicyRepository
     {
         public List<Policy> Items { get; } = new();
@@ -160,6 +205,12 @@ public class PolicyCreationServiceTests
         public Task<List<Policy>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(Items.ToList());
+        }
+
+        public Task DeleteAsync(Policy policy, CancellationToken cancellationToken = default)
+        {
+            Items.Remove(policy);
+            return Task.CompletedTask;
         }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)

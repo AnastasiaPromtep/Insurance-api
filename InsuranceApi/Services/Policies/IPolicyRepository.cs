@@ -9,5 +9,6 @@ public interface IPolicyRepository
     Task<Policy?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Policy?> GetByPolicyNumberAsync(string policyNumber, CancellationToken cancellationToken = default);
     Task<List<Policy>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task DeleteAsync(Policy policy, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

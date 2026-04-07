@@ -39,6 +39,12 @@ public sealed class PolicyRepository : IPolicyRepository
         return _dbContext.Policies.ToListAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(Policy policy, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Policies.Remove(policy);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return _dbContext.SaveChangesAsync(cancellationToken);
