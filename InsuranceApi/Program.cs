@@ -22,7 +22,7 @@ builder.Services.AddDbContext<InsuranceDbContext>(options =>
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
-builder.Services.AddScoped<PolicyCreationService>();
+builder.Services.AddScoped<PolicyService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

@@ -29,6 +29,11 @@ public sealed class PolicyRepository : IPolicyRepository
         return _dbContext.Policies.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
+    public Task<Policy?> GetByPolicyNumberAsync(string policyNumber, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Policies.FirstOrDefaultAsync(p => p.PolicyNumber == policyNumber, cancellationToken);
+    }
+
     public Task<List<Policy>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return _dbContext.Policies.ToListAsync(cancellationToken);

@@ -12,11 +12,11 @@ namespace InsuranceApi.Controllers;
 public class PoliciesController : ControllerBase
 {
     private readonly IPolicyRepository _repository;
-    private readonly PolicyCreationService _creationService;
+    private readonly PolicyService _creationService;
 
     public PoliciesController(
         IPolicyRepository repository,
-        PolicyCreationService creationService)
+        PolicyService creationService)
     {
         _repository = repository;
         _creationService = creationService;

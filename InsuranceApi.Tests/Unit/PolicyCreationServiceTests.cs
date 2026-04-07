@@ -11,7 +11,7 @@ public class PolicyCreationServiceTests
     public async Task CreateAsync_ShouldCreatePolicy_WhenPolicyNumberDoesNotExist()
     {
         var repository = new FakePolicyRepository();
-        var service = new PolicyCreationService(repository);
+        var service = new PolicyService(repository);
 
         var command = new CreatePolicyCommand(
             "POL-001",
@@ -43,7 +43,7 @@ public class PolicyCreationServiceTests
             Status = PolicyStatus.Active
         });
 
-        var service = new PolicyCreationService(repository);
+        var service = new PolicyService(repository);
 
         var command = new CreatePolicyCommand(
             "POL-001",
@@ -55,6 +55,79 @@ public class PolicyCreationServiceTests
 
         await act.Should().ThrowAsync<DuplicatePolicyNumberException>()
             .WithMessage("*POL-001*");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldUpdatePolicy_WhenCommandIsValid()
+    {
+        var repository = new FakePolicyRepository();
+        repository.Items.Add(new Policy
+        {
+            Id = 1,
+            PolicyNumber = "POL-001",
+            SubscriberName = "Alice Dupont",
+            PremiumAmount = 1200m,
+            StartDate = new DateTime(2026, 04, 01),
+            Status = PolicyStatus.Draft
+        });
+
+        var service = new PolicyService(repository);
+
+        var command = new UpdatePolicyCommand(
+            "POL-001",
+            "Alice Dupont Updated",
+            1500m,
+            new DateTime(2026, 05, 01));
+
+        var result = await service.UpdateAsync(command);
+
+        result.Id.Should().Be(1);
+        result.SubscriberName.Should().Be("Alice Dupont Updated");
+        result.PremiumAmount.Should().Be(1500m);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldThrowValidationException_WhenUpdateCommandIsInvalid()
+    {
+        var repository = new FakePolicyRepository();
+        repository.Items.Add(new Policy
+        {
+            Id = 1,
+            PolicyNumber = "POL-001",
+            SubscriberName = "Alice Dupont",
+            PremiumAmount = 1200m,
+            StartDate = new DateTime(2026, 04, 01),
+            Status = PolicyStatus.Draft
+        });
+
+        var service = new PolicyService(repository);
+
+        var command = new UpdatePolicyCommand(
+            "POL-001",
+            "",
+            -100m,
+            new DateTime(2026, 05, 01));
+
+        var act = async () => await service.UpdateAsync(command);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldThrowNotFoundException_WhenUpdatingNonExistingPolicy()
+    {
+        var repository = new FakePolicyRepository();
+        var service = new PolicyService(repository);
+
+        var command = new UpdatePolicyCommand(
+            "999",
+            "Alice Dupont",
+            1500m,
+            new DateTime(2026, 05, 01));
+
+        var act = async () => await service.UpdateAsync(command);
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
     private sealed class FakePolicyRepository : IPolicyRepository
@@ -77,6 +150,11 @@ public class PolicyCreationServiceTests
         public Task<Policy?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(Items.FirstOrDefault(p => p.Id == id));
+        }
+
+        public Task<Policy?> GetByPolicyNumberAsync(string policyNumber, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Items.FirstOrDefault(p => p.PolicyNumber == policyNumber));
         }
 
         public Task<List<Policy>> GetAllAsync(CancellationToken cancellationToken = default)
