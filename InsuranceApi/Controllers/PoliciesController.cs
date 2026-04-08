@@ -83,10 +83,6 @@ public class PoliciesController : ControllerBase
         [FromBody] UpdatePolicyRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(id.ToString()))
-        {
-            return BadRequest(new { message = "Policy ID is required." });
-        }
         if (string.IsNullOrWhiteSpace(request.PolicyNumber))
         {
             return BadRequest(new { message = "Policy number is required." });
@@ -96,6 +92,7 @@ public class PoliciesController : ControllerBase
         {
             var policy = await _policyService.UpdateAsync(
                 new UpdatePolicyCommand(
+                    id,
                     request.PolicyNumber,
                     request.SubscriberName,
                     request.PremiumAmount,

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using InsuranceApi.Data;
 using InsuranceApi.Models;
 using InsuranceApi.Requests;
@@ -19,7 +20,11 @@ builder.Services.AddDbContext<InsuranceDbContext>(options =>
     }
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 builder.Services.AddScoped<PolicyService>();

@@ -74,6 +74,7 @@ public class PolicyCreationServiceTests
         var service = new PolicyService(repository);
 
         var command = new UpdatePolicyCommand(
+            1,
             "POL-001",
             "Alice Dupont Updated",
             1500m,
@@ -103,6 +104,7 @@ public class PolicyCreationServiceTests
         var service = new PolicyService(repository);
 
         var command = new UpdatePolicyCommand(
+            1,
             "POL-001",
             "",
             -100m,
@@ -120,6 +122,7 @@ public class PolicyCreationServiceTests
         var service = new PolicyService(repository);
 
         var command = new UpdatePolicyCommand(
+            999,
             "999",
             "Alice Dupont",
             1500m,

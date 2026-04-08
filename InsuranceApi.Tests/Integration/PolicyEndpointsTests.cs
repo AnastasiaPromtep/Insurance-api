@@ -107,7 +107,7 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             premiumAmount = 1500m,
             startDate = "2026-05-01T00:00:00Z",
             endDate = (DateTime?)null,
-            status = PolicyStatus.Draft.ToString()
+            status = "Draft"
         };
 
         var updateResponse = await _client.PutAsJsonAsync("/policies/1", updateRequest);
@@ -128,7 +128,7 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             status = "Draft"
         };
 
-        var response = await _client.PutAsJsonAsync("/policies", request);
+        var response = await _client.PutAsJsonAsync("/policies/1", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -146,7 +146,7 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             status = "Draft"
         };
 
-        var response = await _client.PutAsJsonAsync("/policies", request);
+        var response = await _client.PutAsJsonAsync("/policies/999", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

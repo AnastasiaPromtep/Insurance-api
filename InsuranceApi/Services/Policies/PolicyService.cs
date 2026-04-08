@@ -70,10 +70,10 @@ public sealed class PolicyService
             throw new ArgumentException("Premium amount must be greater than zero.", nameof(command.PremiumAmount));
         }
 
-        var policy = await _repository.GetByPolicyNumberAsync(command.PolicyNumber, cancellationToken);
+        var policy = await _repository.GetByIdAsync(command.Id, cancellationToken);
         if (policy == null)
         {
-            throw new KeyNotFoundException($"Policy with number {command.PolicyNumber} not found.");
+            throw new KeyNotFoundException($"Policy with ID {command.Id} not found.");
         }
 
         policy.PolicyNumber = command.PolicyNumber;
