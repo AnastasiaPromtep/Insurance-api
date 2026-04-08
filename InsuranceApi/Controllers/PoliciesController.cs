@@ -111,14 +111,14 @@ public class PoliciesController : ControllerBase
         }
     }
 
-    [HttpDelete("{policyNumber}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(
-        string policyNumber,
+        int id,
         CancellationToken cancellationToken)
     {
         try
         {
-            await _policyService.DeleteAsync(policyNumber, cancellationToken);
+            await _policyService.DeleteAsync(id, cancellationToken);
             return NoContent();
         }
         catch (ArgumentException ex)

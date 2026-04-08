@@ -167,7 +167,7 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
         // Now delete it
-        var deleteResponse = await _client.DeleteAsync("/policies/POL-005");
+        var deleteResponse = await _client.DeleteAsync("/policies/1");
 
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }

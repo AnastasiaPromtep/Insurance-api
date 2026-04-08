@@ -149,7 +149,7 @@ public class PolicyCreationServiceTests
 
         var service = new PolicyService(repository);
 
-        await service.DeleteAsync("POL-001");
+        await service.DeleteAsync(1);
 
         repository.Items.Should().BeEmpty();
     }
@@ -160,10 +160,9 @@ public class PolicyCreationServiceTests
         var repository = new FakePolicyRepository();
         var service = new PolicyService(repository);
 
-        var act = async () => await service.DeleteAsync("");
+        var act = async () => await service.DeleteAsync(0);
 
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Policy number is required*");
+        await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
     [Fact]
@@ -172,10 +171,9 @@ public class PolicyCreationServiceTests
         var repository = new FakePolicyRepository();
         var service = new PolicyService(repository);
 
-        var act = async () => await service.DeleteAsync("NON-EXISTENT");
+        var act = async () => await service.DeleteAsync(999);
 
-        await act.Should().ThrowAsync<KeyNotFoundException>()
-            .WithMessage("*NON-EXISTENT*");
+        await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
     private sealed class FakePolicyRepository : IPolicyRepository
