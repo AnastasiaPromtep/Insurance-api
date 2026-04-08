@@ -5,6 +5,7 @@ using FluentAssertions;
 
 namespace InsuranceApi.Tests.Unit;
 
+[Trait("Category", "Unit")]
 public class PolicyCreationServiceTests
 {
     [Fact]

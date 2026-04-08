@@ -4,6 +4,7 @@ using FluentAssertions;
 
 namespace InsuranceApi.Tests.Integration;
 
+[Trait("Category", "Integration")]
 public class PolicyControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;

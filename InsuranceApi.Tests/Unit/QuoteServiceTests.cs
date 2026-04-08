@@ -5,6 +5,7 @@ using InsuranceApi.Services.Quotes;
 
 namespace InsuranceApi.Tests.Unit;
 
+[Trait("Category", "Unit")]
 public class QuoteServiceTests
 {
     [Fact]

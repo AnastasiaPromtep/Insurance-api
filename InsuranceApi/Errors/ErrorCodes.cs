@@ -10,4 +10,11 @@ public static class ErrorCodes
         public const string InvalidSubscriberName = "invalid_subscriber_name";
         public const string InvalidPremiumAmount = "invalid_premium_amount";
     }
+
+    public static class Quote
+    {
+        public const string NotFound = "quote_not_found";
+        public const string InvalidStartDate = "invalid_quote_start_date";
+        public const string InvalidEndDate = "invalid_quote_end_date";
+    }
 }
