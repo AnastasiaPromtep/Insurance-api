@@ -1,4 +1,4 @@
-namespace InsuranceApi.Services.Policies;
+namespace InsuranceApi.Commands;
 
 public sealed record CreatePolicyCommand(
     string PolicyNumber,

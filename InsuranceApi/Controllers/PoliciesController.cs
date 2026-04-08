@@ -1,3 +1,4 @@
+using InsuranceApi.Commands;
 using InsuranceApi.Models;
 using InsuranceApi.Services.Policies;
 using InsuranceApi.Requests;
@@ -11,14 +12,14 @@ namespace InsuranceApi.Controllers;
 public class PoliciesController : ControllerBase
 {
     private readonly IPolicyRepository _repository;
-    private readonly PolicyCreationService _creationService;
+    private readonly PolicyService _policyService;
 
     public PoliciesController(
         IPolicyRepository repository,
-        PolicyCreationService creationService)
+        PolicyService policyService)
     {
         _repository = repository;
-        _creationService = creationService;
+        _policyService = policyService;
     }
 
     [HttpGet]
@@ -48,7 +49,7 @@ public class PoliciesController : ControllerBase
     {
         try
         {
-            var policy = await _creationService.CreateAsync(
+            var policy = await _policyService.CreateAsync(
                 new CreatePolicyCommand(
                     request.PolicyNumber,
                     request.SubscriberName,
@@ -73,6 +74,60 @@ public class PoliciesController : ControllerBase
                 code = "policy_number_already_exists",
                 message = $"A policy with number '{request.PolicyNumber}' already exists."
             });
+        }
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(
+        int id,
+        [FromBody] UpdatePolicyRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.PolicyNumber))
+        {
+            return BadRequest(new { message = "Policy number is required." });
+        }
+
+        try
+        {
+            var policy = await _policyService.UpdateAsync(
+                new UpdatePolicyCommand(
+                    id,
+                    request.PolicyNumber,
+                    request.SubscriberName,
+                    request.PremiumAmount,
+                    request.StartDate),
+                cancellationToken);
+
+            return Ok(policy);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _policyService.DeleteAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
         }
     }
 }
