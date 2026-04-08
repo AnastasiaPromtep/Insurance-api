@@ -1,8 +1,7 @@
 using System.Text.Json.Serialization;
 using InsuranceApi.Data;
-using InsuranceApi.Models;
-using InsuranceApi.Requests;
 using InsuranceApi.Services.Policies;
+using InsuranceApi.Services.Quotes;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -27,7 +26,9 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
+builder.Services.AddScoped<IQuoteRepository, QuoteRepository>();
 builder.Services.AddScoped<PolicyService>();
+builder.Services.AddScoped<QuoteService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
