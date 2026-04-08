@@ -1,7 +1,8 @@
 using InsuranceApi.Commands;
+using InsuranceApi.Errors;
 using InsuranceApi.Models;
-using InsuranceApi.Services.Policies;
 using InsuranceApi.Requests;
+using InsuranceApi.Services.Policies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,27 +24,35 @@ public class PoliciesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<Policy>>> GetAll(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(List<Policy>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var policies = await _repository.GetAllAsync(cancellationToken);
         return Ok(policies);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Policy>> GetById(int id, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(Policy), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var policy = await _repository.GetByIdAsync(id, cancellationToken);
 
         if (policy is null)
         {
-            return NotFound();
+            return ProblemFactory.NotFound(
+                ErrorCodes.Policy.NotFound,
+                $"Policy with id '{id}' was not found.");
         }
 
         return Ok(policy);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Policy>> Create(
+    [ProducesResponseType(typeof(Policy), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Create(
         [FromBody] CreatePolicyRequest request,
         CancellationToken cancellationToken)
     {
@@ -61,33 +70,28 @@ public class PoliciesController : ControllerBase
         }
         catch (DuplicatePolicyNumberException ex)
         {
-            return Conflict(new
-            {
-                code = "policy_number_already_exists",
-                message = ex.Message
-            });
+            return ProblemFactory.Conflict(
+                ErrorCodes.Policy.Duplicate,
+                ex.Message);
         }
         catch (DbUpdateException)
         {
-            return Conflict(new
-            {
-                code = "policy_number_already_exists",
-                message = $"A policy with number '{request.PolicyNumber}' already exists."
-            });
+            return ProblemFactory.Conflict(
+                ErrorCodes.Policy.Duplicate,
+                $"A policy with number '{request.PolicyNumber}' already exists.");
         }
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(Policy), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] UpdatePolicyRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.PolicyNumber))
-        {
-            return BadRequest(new { message = "Policy number is required." });
-        }
-
         try
         {
             var policy = await _policyService.UpdateAsync(
@@ -103,15 +107,39 @@ public class PoliciesController : ControllerBase
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            var code = ex.ParamName switch
+            {
+                nameof(UpdatePolicyCommand.PolicyNumber) => ErrorCodes.Policy.InvalidPolicyNumber,
+                nameof(UpdatePolicyCommand.SubscriberName) => ErrorCodes.Policy.InvalidSubscriberName,
+                nameof(UpdatePolicyCommand.PremiumAmount) => ErrorCodes.Policy.InvalidPremiumAmount,
+                _ => ErrorCodes.Policy.InvalidPolicyNumber
+            };
+
+            return ProblemFactory.BadRequest(code, ex.Message);
         }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return ProblemFactory.NotFound(
+                ErrorCodes.Policy.NotFound,
+                $"Policy with id '{id}' was not found.");
+        }
+        catch (DuplicatePolicyNumberException ex)
+        {
+            return ProblemFactory.Conflict(
+                ErrorCodes.Policy.Duplicate,
+                ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return ProblemFactory.Conflict(
+                ErrorCodes.Policy.Duplicate,
+                $"A policy with number '{request.PolicyNumber}' already exists.");
         }
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
         int id,
         CancellationToken cancellationToken)
@@ -121,13 +149,11 @@ public class PoliciesController : ControllerBase
             await _policyService.DeleteAsync(id, cancellationToken);
             return NoContent();
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return ProblemFactory.NotFound(
+                ErrorCodes.Policy.NotFound,
+                $"Policy with id '{id}' was not found.");
         }
     }
 }

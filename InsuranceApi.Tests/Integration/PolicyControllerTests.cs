@@ -1,15 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using InsuranceApi.Models;
 
 namespace InsuranceApi.Tests.Integration;
 
-public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
+public class PolicyControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public PolicyEndpointsTests(CustomWebApplicationFactory factory)
+    public PolicyControllerTests(CustomWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -33,7 +32,7 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task PostPolicies_ShouldReturnConflictPayload_WhenPolicyNumberAlreadyExists()
+    public async Task PostPolicies_ShouldReturnProblemDetails_WhenPolicyNumberAlreadyExists()
     {
         var request = new
         {
@@ -44,16 +43,21 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         };
 
         await _client.PostAsJsonAsync("/policies", request);
-        var secondResponse = await _client.PostAsJsonAsync("/policies", request);
+        var response = await _client.PostAsJsonAsync("/policies", request);
 
-        secondResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var content = await secondResponse.Content.ReadAsStringAsync();
-        content.Should().Contain("policy_number_already_exists");
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsResponse>();
+
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("Conflict");
+        problem.Status.Should().Be((int)HttpStatusCode.Conflict);
+        problem.Code.Should().Be("policy_number_already_exists");
+        problem.Detail.Should().Contain("POL-001");
     }
 
     [Fact]
-    public async Task PostPolicies_ShouldReturnBadRequest_WhenPremiumAmountIsInvalid()
+    public async Task PostPolicies_ShouldReturnValidationProblemDetails_WhenPremiumAmountIsInvalid()
     {
         var request = new
         {
@@ -66,10 +70,17 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.PostAsJsonAsync("/policies", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetailsResponse>();
+
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("One or more validation errors occurred.");
+        problem.Status.Should().Be((int)HttpStatusCode.BadRequest);
+        problem.Errors.Should().ContainKey("PremiumAmount");
     }
 
     [Fact]
-    public async Task PostPolicies_ShouldReturnBadRequest_WhenPolicyNumberIsEmpty()
+    public async Task PostPolicies_ShouldReturnValidationProblemDetails_WhenPolicyNumberIsEmpty()
     {
         var request = new
         {
@@ -82,12 +93,18 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.PostAsJsonAsync("/policies", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetailsResponse>();
+
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("One or more validation errors occurred.");
+        problem.Status.Should().Be((int)HttpStatusCode.BadRequest);
+        problem.Errors.Should().ContainKey("PolicyNumber");
     }
 
     [Fact]
     public async Task PutPolicies_ShouldReturnOk_WhenRequestIsValid()
     {
-        // First create a policy
         var createRequest = new
         {
             policyNumber = "POL-003",
@@ -99,7 +116,6 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var createResponse = await _client.PostAsJsonAsync("/policies", createRequest);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        // Now update it
         var updateRequest = new
         {
             policyNumber = "POL-003",
@@ -116,7 +132,7 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task PutPolicies_ShouldReturnBadRequest_WhenPolicyNumberIsMissing()
+    public async Task PutPolicies_ShouldReturnValidationProblemDetails_WhenPolicyNumberIsMissing()
     {
         var request = new
         {
@@ -131,10 +147,17 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.PutAsJsonAsync("/policies/1", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetailsResponse>();
+
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("One or more validation errors occurred.");
+        problem.Status.Should().Be((int)HttpStatusCode.BadRequest);
+        problem.Errors.Should().ContainKey("PolicyNumber");
     }
 
     [Fact]
-    public async Task PutPolicies_ShouldReturnNotFound_WhenPolicyDoesNotExist()
+    public async Task PutPolicies_ShouldReturnProblemDetails_WhenPolicyDoesNotExist()
     {
         var request = new
         {
@@ -149,12 +172,19 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.PutAsJsonAsync("/policies/999", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsResponse>();
+
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("Not found");
+        problem.Status.Should().Be((int)HttpStatusCode.NotFound);
+        problem.Code.Should().Be("policy_not_found");
+        problem.Detail.Should().Contain("999");
     }
 
     [Fact]
     public async Task DeletePolicies_ShouldReturnNoContent_WhenPolicyExists()
     {
-        // First create a policy
         var createRequest = new
         {
             policyNumber = "POL-005",
@@ -166,17 +196,24 @@ public class PolicyEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var createResponse = await _client.PostAsJsonAsync("/policies", createRequest);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        // Now delete it
         var deleteResponse = await _client.DeleteAsync("/policies/1");
 
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
-    public async Task DeletePolicies_ShouldReturnNotFound_WhenPolicyDoesNotExist()
+    public async Task DeletePolicies_ShouldReturnProblemDetails_WhenPolicyDoesNotExist()
     {
-        var response = await _client.DeleteAsync("/policies/NON-EXISTENT");
+        var response = await _client.DeleteAsync("/policies/999");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsResponse>();
+
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("Not found");
+        problem.Status.Should().Be((int)HttpStatusCode.NotFound);
+        problem.Code.Should().Be("policy_not_found");
+        problem.Detail.Should().Contain("999");
     }
 }
